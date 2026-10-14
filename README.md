@@ -17,7 +17,8 @@ User request → intent interpretation → approved destination catalogue → cl
 - Screen 3: Destination Result
 - Screen 4: Navigation Confirmation / Success
 - Existing Settings path preserved
-- Local deterministic intent matching
+- Server-side LLM intent interpretation when configured
+- Local deterministic fallback when no API key/model is available
 - Approved catalogue of supported destinations
 - Ambiguous requests trigger clarification
 - Unsupported requests do not invent destinations
@@ -52,7 +53,7 @@ The prototype keeps AI within a controlled boundary:
 
 ## Evaluation
 
-The planned evaluation dataset contains 15 natural-language requests covering clear, ambiguous, and unsupported cases. The current local matcher is a controlled prototype baseline and should not be presented as a production LLM.
+The 15-case deterministic baseline is automated in CI and currently passes 15/15 defined scenarios. This baseline should not be presented as production LLM accuracy. A server-side LLM resolver is now available for comparative testing when an API key is configured.
 
 See:
 - [docs/evaluation.md](docs/evaluation.md)
@@ -61,7 +62,7 @@ See:
 
 ## Current status
 
-The four-screen MVP journey was completed and mobile-validated in Lovable. A later iteration added local intent matching, but Lovable credits ran out before the final cleanup and full multi-case validation could be completed. The repository therefore preserves the work transparently rather than claiming unfinished validation as complete.
+The four-screen MVP journey is preserved in this repository. The deterministic matcher has been build-validated and evaluated in GitHub CI. The next stage is comparative evaluation of the optional server-side LLM resolver against the deterministic baseline.
 
 ## Tech
 
@@ -74,3 +75,7 @@ The four-screen MVP journey was completed and mobile-validated in Lovable. A lat
 ## Origin
 
 This is an independent product case study and prototype. It is not an official feature of Shortcut Maker and does not claim production integration with Android system settings or a live AI model.
+
+## Optional live AI configuration
+
+Copy `.env.example` to your local environment and provide `OPENAI_API_KEY` on the **server only**. The client never receives the key. If the model call fails, returns invalid output, or is not configured, the app falls back to the approved local matcher.
