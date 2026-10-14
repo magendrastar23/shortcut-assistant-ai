@@ -35,8 +35,8 @@ function extractResponseText(payload: unknown): string {
 export function parseLlmDecision(text: string): LlmDecision | null {
   const cleaned = text
     .trim()
-    .replace(/^\`\`\`(?:json)?/i, "")
-    .replace(/\`\`\`$/, "")
+    .replace(/^```(?:json)?/i, "")
+    .replace(/```$/, "")
     .trim();
 
   try {
