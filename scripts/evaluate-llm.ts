@@ -39,9 +39,11 @@ const approved = catalogue.map((entry) => ({
   destination: entry.name,
 }));
 
-function extractText(payload: any): string {
-  if (typeof payload?.output_text === "string") return payload.output_text;
-  for (const item of payload?.output ?? []) {
+function extractText(payload: unknown): string {
+  if (!payload || typeof payload !== "object") return "";
+  const response = payload as { output_text?: string; output?: Array<{ content?: Array<{ text?: string }> }> };
+  if (typeof response.output_text === "string") return payload.output_text;
+  for (const item of response.output ?? []) {
     for (const content of item?.content ?? []) {
       if (typeof content?.text === "string" && content.text.trim()) return content.text;
     }
@@ -80,8 +82,8 @@ async function classify(request: string) {
 
   const text = extractText(await response.json())
     .trim()
-    .replace(/^\`\`\`(?:json)?/i, "")
-    .replace(/\`\`\`$/, "")
+    .replace(/^```(?:json)?/i, "")
+    .replace(/```$/, "")
     .trim();
 
   return JSON.parse(text) as { kind: "match" | "clarify" | "none"; destinationId?: string };
