@@ -1,28 +1,33 @@
 import { catalogue } from "../src/lib/intent-catalogue";
 
+type ExpectedKind = "match" | "clarify" | "none";
 type Case = {
   id: number;
   request: string;
-  expectedKind: "match" | "clarify";
+  expectedKind: ExpectedKind;
   expectedDestinationId?: string;
+  category: "core" | "unsupported-safety";
 };
 
 const cases: Case[] = [
-  { id: 1, request: "I want to manage app permissions", expectedKind: "match", expectedDestinationId: "permissions" },
-  { id: 2, request: "Turn on Wi-Fi", expectedKind: "match", expectedDestinationId: "wifi" },
-  { id: 3, request: "I want to connect to Bluetooth", expectedKind: "match", expectedDestinationId: "bluetooth" },
-  { id: 4, request: "Stop apps from sending notifications", expectedKind: "match", expectedDestinationId: "notifications" },
-  { id: 5, request: "Show me battery settings", expectedKind: "match", expectedDestinationId: "battery" },
-  { id: 6, request: "I want to change my screen brightness", expectedKind: "match", expectedDestinationId: "display" },
-  { id: 7, request: "I want to change my phone wallpaper", expectedKind: "match", expectedDestinationId: "wallpaper" },
-  { id: 8, request: "I want to manage my installed apps", expectedKind: "match", expectedDestinationId: "apps" },
-  { id: 9, request: "I want to control mobile data", expectedKind: "match", expectedDestinationId: "mobile-data" },
-  { id: 10, request: "I want to change my phone language", expectedKind: "match", expectedDestinationId: "language" },
-  { id: 11, request: "I want to manage location access", expectedKind: "match", expectedDestinationId: "location" },
-  { id: 12, request: "Make my phone silent", expectedKind: "match", expectedDestinationId: "sound" },
-  { id: 13, request: "I want to change my password", expectedKind: "match", expectedDestinationId: "security" },
-  { id: 14, request: "Help me manage my phone", expectedKind: "clarify" },
-  { id: 15, request: "My phone isn't working properly", expectedKind: "clarify" },
+  { id: 1, request: "I want to manage app permissions", expectedKind: "match", expectedDestinationId: "permissions", category: "core" },
+  { id: 2, request: "Turn on Wi-Fi", expectedKind: "match", expectedDestinationId: "wifi", category: "core" },
+  { id: 3, request: "I want to connect to Bluetooth", expectedKind: "match", expectedDestinationId: "bluetooth", category: "core" },
+  { id: 4, request: "Stop apps from sending notifications", expectedKind: "match", expectedDestinationId: "notifications", category: "core" },
+  { id: 5, request: "Show me battery settings", expectedKind: "match", expectedDestinationId: "battery", category: "core" },
+  { id: 6, request: "I want to change my screen brightness", expectedKind: "match", expectedDestinationId: "display", category: "core" },
+  { id: 7, request: "I want to change my phone wallpaper", expectedKind: "match", expectedDestinationId: "wallpaper", category: "core" },
+  { id: 8, request: "I want to manage my installed apps", expectedKind: "match", expectedDestinationId: "apps", category: "core" },
+  { id: 9, request: "I want to control mobile data", expectedKind: "match", expectedDestinationId: "mobile-data", category: "core" },
+  { id: 10, request: "I want to change my phone language", expectedKind: "match", expectedDestinationId: "language", category: "core" },
+  { id: 11, request: "I want to manage location access", expectedKind: "match", expectedDestinationId: "location", category: "core" },
+  { id: 12, request: "Make my phone silent", expectedKind: "match", expectedDestinationId: "sound", category: "core" },
+  { id: 13, request: "I want to change my password", expectedKind: "match", expectedDestinationId: "security", category: "core" },
+  { id: 14, request: "Help me manage my phone", expectedKind: "clarify", category: "core" },
+  { id: 15, request: "My phone isn't working properly", expectedKind: "clarify", category: "core" },
+  { id: 16, request: "Open Instagram", expectedKind: "none", category: "unsupported-safety" },
+  { id: 17, request: "Find a nearby restaurant", expectedKind: "none", category: "unsupported-safety" },
+  { id: 18, request: "Play a song", expectedKind: "none", category: "unsupported-safety" },
 ];
 
 const apiKey = process.env.OPENAI_API_KEY;
@@ -86,7 +91,18 @@ async function classify(request: string) {
     .replace(/```$/, "")
     .trim();
 
-  return JSON.parse(text) as { kind: "match" | "clarify" | "none"; destinationId?: string };
+  const parsed = JSON.parse(text) as { kind?: unknown; destinationId?: unknown };
+  if (parsed.kind === "clarify" || parsed.kind === "none") {
+    return { kind: parsed.kind };
+  }
+  if (
+    parsed.kind === "match" &&
+    typeof parsed.destinationId === "string" &&
+    approved.some((entry) => entry.id === parsed.destinationId)
+  ) {
+    return { kind: "match", destinationId: parsed.destinationId };
+  }
+  throw new Error("Invalid model response or destination outside the approved catalogue");
 }
 
 let passed = 0;
