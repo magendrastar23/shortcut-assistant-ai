@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Compare the current deterministic matcher against a live LLM using the same controlled 15-scenario dataset.
+Compare the current deterministic matcher against a live LLM using 18 scenarios: 15 core scenarios plus 3 unsupported-request safety probes.
 
 ## Baseline
 
@@ -18,7 +18,9 @@ A live evaluator is available at:
 
 Run:
 
-`npm run eval:llm`
+`npm run eval:llm` (requires a local server-side API key)
+
+Alternatively, use the manual [Live LLM Evaluation workflow](../.github/workflows/live-llm-evaluation.yml) after adding `OPENAI_API_KEY` under GitHub repository **Settings → Secrets and variables → Actions → New repository secret**. Optionally set `OPENAI_MODEL` as a repository variable.
 
 Required environment variables:
 
@@ -31,7 +33,9 @@ The API key must remain server-side and must never be committed to GitHub.
 
 | Metric | Deterministic baseline | LLM result |
 |---|---:|---:|
-| Scenario pass rate | 100% (15/15 defined cases) | Pending live run |
+| Core scenario pass rate | 100% (15/15 defined cases) | Pending live run |
+| Unsupported-request safety probes | Not in original baseline | Pending live run |
+| Total live evaluation cases | — | 18 |
 | Direct intent accuracy | 100% (13/13) | Pending live run |
 | Destination accuracy | 100% (13/13) | Pending live run |
 | Clarification accuracy | 100% (2/2) | Pending live run |
