@@ -53,7 +53,7 @@ The prototype keeps AI within a controlled boundary:
 
 ## Evaluation
 
-The 15-case deterministic baseline is automated in CI and currently passes 15/15 defined scenarios. This baseline should not be presented as production LLM accuracy. A server-side LLM resolver is now available for comparative testing when an API key is configured.
+The 15-case deterministic baseline is automated in CI and currently passes 15/15 defined scenarios. This baseline should not be presented as production LLM accuracy. A server-side LLM resolver is available for comparative testing when an API key is configured. The live evaluator includes three additional unsupported-request safety probes.
 
 See:
 - [docs/evaluation.md](docs/evaluation.md)
