@@ -1,5 +1,5 @@
 import { mkdir, writeFile } from "node:fs/promises";
-import { catalogue } from "../src/lib/intent-catalogue";
+import { catalogue, matchIntent } from "../src/lib/intent-catalogue";
 
 type ExpectedKind = "match" | "clarify" | "none";
 type TestCase = {
@@ -94,12 +94,28 @@ async function classify(request: string) {
 let passed = 0;
 let corePassed = 0;
 let safetyPassed = 0;
+let deterministicPassed = 0;
+let deterministicCorePassed = 0;
+let deterministicSafetyPassed = 0;
 let inputTokens = 0;
 let outputTokens = 0;
 const rows: Array<Record<string, string | number | boolean>> = [];
 
 for (const test of cases) {
   const started = Date.now();
+  const localResult = matchIntent(test.request);
+  const deterministicDecision: Decision =
+    localResult.kind === "match"
+      ? { kind: "match", destinationId: localResult.entry.id }
+      : { kind: localResult.kind };
+  const deterministicPass =
+    deterministicDecision.kind === test.expectedKind &&
+    (test.expectedKind !== "match" || deterministicDecision.destinationId === test.expectedDestinationId);
+  if (deterministicPass) {
+    deterministicPassed += 1;
+    if (test.category === "core") deterministicCorePassed += 1;
+    else deterministicSafetyPassed += 1;
+  }
   try {
     const response = await classify(test.request);
     inputTokens += response.inputTokens;
@@ -116,6 +132,8 @@ for (const test of cases) {
     rows.push({
       id: test.id, category: test.category, request: test.request,
       expected: test.expectedDestinationId ?? test.expectedKind,
+      deterministicActual: deterministicDecision.destinationId ?? deterministicDecision.kind,
+      deterministicPass,
       actual: decision.destinationId ?? decision.kind, pass, durationMs,
       inputTokens: response.inputTokens, outputTokens: response.outputTokens,
     });
@@ -123,6 +141,8 @@ for (const test of cases) {
     rows.push({
       id: test.id, category: test.category, request: test.request,
       expected: test.expectedDestinationId ?? test.expectedKind,
+      deterministicActual: deterministicDecision.destinationId ?? deterministicDecision.kind,
+      deterministicPass,
       actual: error instanceof Error ? error.message : "Unknown error",
       pass: false, durationMs: Date.now() - started, inputTokens: 0, outputTokens: 0,
     });
@@ -135,6 +155,10 @@ const summary = {
   corePassed, safetyCases: cases.filter((test) => test.category === "unsupported-safety").length,
   safetyPassed, totalPassed: passed,
   passRatePercent: Number(((passed / cases.length) * 100).toFixed(1)),
+  deterministicPassed,
+  deterministicPassRatePercent: Number(((deterministicPassed / cases.length) * 100).toFixed(1)),
+  deterministicCorePassed,
+  deterministicSafetyPassed,
   averageLatencyMs: Math.round(rows.reduce((sum, row) => sum + Number(row.durationMs), 0) / rows.length),
   totalInputTokens: inputTokens, totalOutputTokens: outputTokens, results: rows,
 };
@@ -145,6 +169,10 @@ console.log(JSON.stringify({
   model, total: cases.length, passed, passRatePercent: summary.passRatePercent,
   corePassed: `${corePassed}/${summary.coreCases}`,
   safetyPassed: `${safetyPassed}/${summary.safetyCases}`,
+  deterministicPassed: `${deterministicPassed}/${cases.length}`,
+  deterministicPassRatePercent: summary.deterministicPassRatePercent,
+  deterministicCorePassed: `${deterministicCorePassed}/${summary.coreCases}`,
+  deterministicSafetyPassed: `${deterministicSafetyPassed}/${summary.safetyCases}`,
   averageLatencyMs: summary.averageLatencyMs, totalInputTokens: inputTokens,
   totalOutputTokens: outputTokens, resultFile: "artifacts/llm-evaluation-results.json",
 }, null, 2));
