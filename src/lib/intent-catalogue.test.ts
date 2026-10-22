@@ -36,4 +36,46 @@ describe("intent catalogue evaluation dataset", () => {
   it("asks for clarification for a vague device problem", () => {
     expect(matchIntent("My phone isn't working properly").kind).toBe("clarify");
   });
+
+  const unsupportedCases = [
+    "Open Instagram",
+    "Find a nearby restaurant",
+    "Play a song",
+  ];
+
+  for (const request of unsupportedCases) {
+    it(`does not invent a settings destination for: ${request}`, () => {
+      expect(matchIntent(request).kind).toBe("none");
+    });
+  }
+
+  it("returns only destinations from the approved catalogue", () => {
+    const supportedRequests = [
+      "Turn on Wi-Fi",
+      "Connect my Bluetooth headphones",
+      "Change screen brightness",
+      "Change my password",
+    ];
+
+    for (const request of supportedRequests) {
+      const result = matchIntent(request);
+      if (result.kind === "match") {
+        expect([
+          "wifi",
+          "bluetooth",
+          "permissions",
+          "notifications",
+          "battery",
+          "display",
+          "wallpaper",
+          "apps",
+          "mobile-data",
+          "language",
+          "location",
+          "sound",
+          "security",
+        ]).toContain(result.entry.id);
+      }
+    }
+  });
 });
